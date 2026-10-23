@@ -115,6 +115,8 @@ li.editing .btns{display:flex;gap:8px}
 #msg{color:var(--crit);font-size:13px}
 footer{font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+header{order:-2}
+#setup{order:-1}  /* 接続設定は見出しの直下に出す */
 .link{border:0;background:none;color:var(--muted);font:13px var(--f-body);text-decoration:underline;cursor:pointer;padding:6px 0}
 .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .panel label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700}
@@ -897,7 +899,7 @@ footer{font-size:12px;color:var(--muted)}
     $("setup-msg").textContent = setupMsg;
     $("setup-close").hidden = !getCfg();
   }
-  function openSetup() { $("setup").hidden = false; renderSetup(); }
+  function openSetup() { $("setup").hidden = false; renderSetup(); window.scrollTo(0, 0); }
   $("setup-open").addEventListener("click", function () { setupMsg = ""; openSetup(); });
   $("setup-close").addEventListener("click", function () { $("setup").hidden = true; });
   $("setup-connect").addEventListener("click", function () {
