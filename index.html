@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ToDo・持ち物</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ToDo">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex, nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: eno-tools準拠。単一カラム、細い罫線のカード、スレート単色アクセント。タブで ToDo / 持ち物 を切替。持ち物は旅行ごとのリスト。 */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --ink:#1f2328; --muted:#6b7178; --line:#dde1e5;
+  --accent:#2b2f36; --accent-ink:#ffffff; --soft:#f0f2f4; --crit:#9a4a44;
+  --f-display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15171a; --surface:#1e2125; --ink:#e6e8ea; --muted:#9aa0a6; --line:#30343a;
+  --accent:#d5d9de; --accent-ink:#15171a; --soft:#272b30; --crit:#d9958d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1e2125; --ink:#e6e8ea; --muted:#9aa0a6; --line:#30343a;
+  --accent:#d5d9de; --accent-ink:#15171a; --soft:#272b30; --crit:#d9958d; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scrollbar-gutter:stable;overflow-y:scroll}
+#lists{min-height:70vh}
+#sync{min-height:1.6em}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.wrap{max-width:720px;margin:0 auto;padding-block:36px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.eyebrow{display:flex;align-items:center;gap:12px;font-size:12px;letter-spacing:.24em;color:var(--muted);margin:0 0 10px}
+.eyebrow::before{content:"";width:36px;height:1.5px;background:var(--ink)}
+header{display:flex;flex-direction:column;margin-bottom:8px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(28px,6vw,40px);letter-spacing:.06em;margin:0;line-height:1.3}
+h1 svg{width:.85em;height:.85em;vertical-align:-.08em;margin-right:.3em}
+#sync{font-size:12px;color:var(--muted);margin-top:6px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.tabs button{border:0;background:transparent;color:var(--muted);font:700 15px var(--f-body);letter-spacing:.06em;padding:11px 8px;cursor:pointer;min-height:44px}
+.tabs button+button{border-left:1px solid var(--line)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.trip{display:flex;flex-direction:column;gap:10px}
+/* 旅行選択は進捗・入力欄の下に置く。タブを切り替えても上の部分は動かない */
+.trip-row:first-child{min-height:48px}
+#more{width:48px;padding:0;font-size:18px;min-height:48px}
+.trip-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.trip-row select{flex:1 1 120px;min-height:48px;min-width:0;font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:.04em}
+.panel{display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.panel h3{margin:0;font-size:12px;font-weight:500;letter-spacing:.2em;color:var(--muted)}
+.panel .row{display:flex;gap:8px;flex-wrap:wrap}
+.panel .row>*{flex:1 1 160px;min-width:0}
+.panel .row.btns>*{flex:0 0 auto}
+.hint{font-size:12px;color:var(--muted);margin:0}
+.ed-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
+.ed-list .empty{padding:16px}
+.ed-row{display:flex;gap:6px;align-items:center}
+.ed-row input[type="text"]{flex:1 1 auto;min-width:0;min-height:40px;padding:7px 10px}
+.ed-row select{flex:0 0 auto;min-height:40px;padding:7px 8px;max-width:9em}
+.ed-row .del{width:40px;height:40px}
+.sortable{position:relative}
+.grip{border:0;background:transparent;color:var(--muted);cursor:grab;touch-action:none;width:30px;height:44px;flex:none;padding:0;margin-left:2px;font-size:18px;line-height:1;letter-spacing:-3px;border-radius:6px}
+.grip:hover{color:var(--ink)}
+.ed-row .grip{height:40px}
+.sortable.drag{opacity:.75;z-index:2;border-color:var(--accent)}
+.sortable.drop-before::before,.sortable.drop-end::after{content:"";position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px}
+.sortable.drop-before::before{top:-5px}
+.sortable.drop-end::after{bottom:-5px}
+
+.progress{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+.bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.progress b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+
+form{display:flex;gap:8px;flex-wrap:wrap}
+form input[type="text"]{flex:1 1 200px;min-width:0}
+input[type="text"],select{font:15px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-height:44px}
+.add{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:700 15px var(--f-body);letter-spacing:.06em;border-radius:6px;padding:0 22px;min-height:44px;cursor:pointer}
+.sm{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:5px;padding:8px 14px;min-height:40px;cursor:pointer}
+.sm:hover{border-color:var(--accent)}
+.sm:disabled{opacity:.45;cursor:default}
+.sm:disabled:hover{border-color:var(--line)}
+.sm.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.sm.danger{color:var(--crit)}
+.sm.danger.armed{background:var(--crit);color:#fff;border-color:var(--crit)}
+
+.group{display:flex;flex-direction:column;gap:6px}
+.group h2{font-size:12px;letter-spacing:.2em;color:var(--muted);margin:12px 0 0;font-weight:500}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+li{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding-right:4px;transition:border-color .15s}
+li:hover{border-color:var(--accent)}
+li label{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:12px 8px 12px 4px;cursor:pointer}
+li input[type="checkbox"]{width:20px;height:20px;accent-color:var(--accent);flex:none;margin:0}
+li .t{overflow-wrap:anywhere}
+li.done .t{text-decoration:line-through;color:var(--muted)}
+.del{border:0;background:transparent;color:var(--muted);font-size:20px;width:44px;height:44px;border-radius:8px;cursor:pointer;flex:none}
+.del:hover{color:var(--crit)}
+.edit{border:0;background:transparent;color:var(--muted);font-size:16px;width:40px;height:44px;border-radius:8px;cursor:pointer;flex:none}
+.edit:hover{color:var(--ink)}
+li.editing{flex-wrap:wrap;padding:10px;gap:8px}
+li.editing input[type="text"]{flex:1 1 180px;min-width:0}
+li.editing select{flex:0 0 auto}
+li.editing .btns{display:flex;gap:8px}
+.empty{text-align:center;color:var(--muted);padding:32px 12px;border:1px dashed var(--line);border-radius:8px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+#msg{color:var(--crit);font-size:13px}
+footer{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.link{border:0;background:none;color:var(--muted);font:13px var(--f-body);text-decoration:underline;cursor:pointer;padding:6px 0}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.panel label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700}
+.panel label.f input{font-weight:400}
+.filebtn{display:inline-flex;align-items:center}
+.filebtn input{display:none}
+.panel ol{margin:0;padding-left:1.4em;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">TODO &amp; PACKING</p>
+    <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>ToDo・持ち物</h1>
+    <span id="sync" role="status">読み込み中…</span>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button id="tab-todo" role="tab" aria-selected="true" data-list="todo">ToDo</button>
+    <button id="tab-packing" role="tab" aria-selected="false" data-list="packing">持ち物</button>
+  </div>
+
+  <div class="progress"><div class="bar"><i id="fill"></i></div><span id="count"></span></div>
+
+  <form id="form">
+    <input type="text" id="text" maxlength="200" autocomplete="off" aria-label="項目を追加">
+    <select id="cat" aria-label="分類" hidden></select>
+    <button class="add" type="submit">追加</button>
+  </form>
+  <div id="msg" role="alert"></div>
+
+  <section class="trip" id="trip" hidden aria-label="旅行">
+    <div class="trip-row">
+      <select id="trip-sel" aria-label="旅行を選ぶ"></select>
+      <button class="sm primary" id="new-trip" type="button">＋ 新しい旅行</button>
+      <button class="sm" id="more" type="button" aria-expanded="false" aria-label="その他の操作">⋯</button>
+    </div>
+    <div class="trip-row" id="trip-tools" hidden>
+      <button class="sm" id="edit-tpl" type="button">テンプレートを編集</button>
+      <button class="sm" id="save-tpl" type="button">テンプレートとして保存</button>
+      <button class="sm danger" id="del-trip" type="button">この旅行を削除</button>
+    </div>
+
+    <div class="panel" id="new-panel" hidden>
+      <h3>新しい旅行</h3>
+      <div class="row">
+        <input type="text" id="trip-name" maxlength="60" autocomplete="off" placeholder="旅行の名前（例：京都 2泊3日）" aria-label="旅行の名前">
+        <select id="tpl-sel" aria-label="テンプレート"></select>
+      </div>
+      <p class="hint" id="tpl-hint"></p>
+      <div class="row btns">
+        <button class="sm primary" id="create-trip" type="button">作成</button>
+        <button class="sm" id="cancel-trip" type="button">キャンセル</button>
+        <button class="sm danger" id="del-tpl" type="button" hidden>このテンプレートを削除</button>
+      </div>
+    </div>
+
+    <div class="panel" id="ed-panel" hidden>
+      <h3>テンプレートを編集</h3>
+      <div class="row">
+        <select id="ed-sel" aria-label="編集するテンプレート"></select>
+        <input type="text" id="ed-name" maxlength="60" autocomplete="off" placeholder="テンプレート名" aria-label="テンプレート名">
+      </div>
+      <p class="hint" id="ed-hint"></p>
+      <div id="ed-list" class="ed-list"></div>
+      <div class="row">
+        <input type="text" id="ed-text" maxlength="200" autocomplete="off" placeholder="持ち物を追加" aria-label="テンプレートに持ち物を追加">
+        <select id="ed-cat" aria-label="分類"></select>
+        <button class="sm" id="ed-add" type="button">追加</button>
+      </div>
+      <div class="row btns">
+        <button class="sm primary" id="ed-save" type="button">保存</button>
+        <button class="sm" id="ed-close" type="button">閉じる</button>
+        <button class="sm danger" id="ed-del" type="button" hidden>このテンプレートを削除</button>
+      </div>
+    </div>
+
+    <div class="panel" id="tpl-panel" hidden>
+      <h3>テンプレートとして保存</h3>
+      <div class="row">
+        <input type="text" id="tpl-name" maxlength="60" autocomplete="off" aria-label="テンプレート名">
+      </div>
+      <p class="hint">この旅行の持ち物（チェックなし）を保存します。同じ名前があれば上書きします。</p>
+      <div class="row btns">
+        <button class="sm primary" id="tpl-ok" type="button">保存</button>
+        <button class="sm" id="tpl-cancel" type="button">キャンセル</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="tools">
+    <button class="sm" id="clear-done" type="button">完了を削除</button>
+    <button class="sm" id="uncheck" type="button" hidden>チェックを全部外す</button>
+  </div>
+
+  <div id="lists"></div>
+
+  <div class="panel" id="setup" hidden>
+    <h3>接続設定</h3>
+    <p class="hint">Googleスプレッドシートに作った保存用プログラムの「ウェブアプリのURL」と、プログラムに書いた合言葉を入れてください。手順は SETUP.md にあります。</p>
+    <label class="f" for="cfg-url">ウェブアプリのURL
+      <input type="text" id="cfg-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
+    </label>
+    <label class="f" for="cfg-key">合言葉
+      <input type="text" id="cfg-key" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </label>
+    <div id="setup-msg" class="hint" role="status"></div>
+    <div class="row btns">
+      <button class="sm primary" id="setup-connect" type="button">接続する</button>
+      <button class="sm" id="setup-close" type="button" hidden>閉じる</button>
+      <button class="sm" id="setup-export" type="button">バックアップを書き出す</button>
+      <label class="sm filebtn">ファイルを取り込む<input type="file" id="setup-import" accept=".json,application/json"></label>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <span>保存先：Googleスプレッドシート</span>
+    <button class="link" id="setup-open" type="button">接続設定</button>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var CATS = ["衣類", "その他"];
+  var LEGACY = "_legacy";
+
+
+  var cur = location.hash === "#packing" ? "packing" : "todo";
+  var items = [], trips = [], tpls = [];
+  var itemsCol = null, tripsCol = null, tplsCol = null;
+  var tripId = null, pendingTrip = null;
+  var $ = function (id) { return document.getElementById(id); };
+  var armTimer = {};
+
+  function ls(k, v) {
+    try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {}
+    return null;
+  }
+  function setMsg(t) { $("msg").textContent = t || ""; }
+  function fail(e) {
+    setMsg(e && e.code === "invalid_argument" ? "書き込み権限がありません。オーナーのアカウントで開いてください。" : "保存できませんでした。通信を確認してもう一度お試しください。");
+  }
+  function catOf(i) { return CATS.indexOf(i.cat) < 0 ? "その他" : i.cat; }
+
+  /* 2回押しで実行する確認（confirm()は使えないため） */
+  function armed(btn, label, run) {
+    btn.addEventListener("click", function () {
+      if (btn.classList.contains("armed")) {
+        clearTimeout(armTimer[btn.id]); btn.classList.remove("armed"); btn.textContent = label; run();
+      } else {
+        btn.classList.add("armed"); btn.textContent = "もう一度押すと削除";
+        armTimer[btn.id] = setTimeout(function () { btn.classList.remove("armed"); btn.textContent = label; }, 3500);
+      }
+    });
+  }
+
+  /* ---------- 旅行 ---------- */
+  function legacyItems() { return items.filter(function (i) { return i.list === "packing" && !i.trip; }); }
+
+  function tripList() {
+    var l = trips.slice().sort(function (a, b) { return a.created - b.created; });
+    if (legacyItems().length) l.push({ id: LEGACY, name: "旧リスト（旅行未設定）", created: 0 });
+    return l;
+  }
+
+  function ensureTrip() {
+    var l = tripList();
+    if (pendingTrip && l.some(function (t) { return t.id === pendingTrip; })) pendingTrip = null;
+    if (tripId && tripId === pendingTrip) return;
+    if (l.some(function (t) { return t.id === tripId; })) return;
+    var saved = ls("trip");
+    if (l.some(function (t) { return t.id === saved; })) tripId = saved;
+    else tripId = l.length ? l[l.length - 1].id : null;
+  }
+
+  function renderTrips() {
+    var l = tripList(), sel = $("trip-sel");
+    sel.textContent = "";
+    if (!l.length) {
+      var o = document.createElement("option"); o.textContent = "旅行がありません"; o.value = ""; sel.appendChild(o);
+    }
+    l.forEach(function (t) {
+      var o = document.createElement("option"); o.value = t.id; o.textContent = t.name; sel.appendChild(o);
+    });
+    if (tripId) sel.value = tripId;
+    sel.disabled = !l.length;
+    $("save-tpl").disabled = !tripId;
+    $("del-trip").disabled = !tripId;
+  }
+
+  function renderTplOptions() {
+    var sel = $("tpl-sel"), prev = sel.value;
+    sel.textContent = "";
+    function add(v, t, parent) { var o = document.createElement("option"); o.value = v; o.textContent = t; (parent || sel).appendChild(o); }
+    add("", "テンプレートなし（空のリスト）");
+    if (tpls.length) {
+      var g2 = document.createElement("optgroup"); g2.label = "保存したテンプレート";
+      tpls.slice().sort(function (a, b) { return a.created - b.created; }).forEach(function (t) { add("u:" + t.id, t.name, g2); });
+      sel.appendChild(g2);
+    }
+    if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
+    updateTplHint();
+  }
+
+  function tplItems(v) {
+    var out = [];
+    if (!v) return out;
+    tpls.forEach(function (t) { if ("u:" + t.id === v) out = (t.items || []).slice(); });
+    return out;
+  }
+
+  function updateTplHint() {
+    var v = $("tpl-sel").value, n = tplItems(v).length;
+    $("tpl-hint").textContent = v ? n + "個の持ち物が最初から入ります。作成後に追加・削除できます。" : "";
+    $("del-tpl").hidden = v.indexOf("u:") !== 0;
+  }
+
+  function createTrip() {
+    var name = $("trip-name").value.trim();
+    if (!name || !tripsCol) { $("trip-name").focus(); return; }
+    var list = tplItems($("tpl-sel").value);
+    var ref = tripsCol.doc();
+    var now = Date.now();
+    tripId = pendingTrip = ref.id; ls("trip", tripId);
+    $("trip-name").value = "";
+    $("new-panel").hidden = true;
+    ref.set({ name: name, created: now }).then(function () {
+      return Promise.all(list.map(function (it, k) {
+        return itemsCol.add({ list: "packing", trip: ref.id, text: it.text, cat: it.cat, done: false, created: now + k });
+      }));
+    }).catch(fail);
+  }
+
+  function saveTemplate() {
+    var name = $("tpl-name").value.trim();
+    if (!name || !tplsCol) { $("tpl-name").focus(); return; }
+    var list = items.filter(function (i) { return i.list === "packing" && (tripId === LEGACY ? !i.trip : i.trip === tripId); })
+      .sort(function (a, b) { return keyOf(a) - keyOf(b); })
+      .map(function (i) { return { text: i.text, cat: catOf(i) }; });
+    var same = tpls.filter(function (t) { return t.name === name; })[0];
+    var ref = same ? tplsCol.doc(same.id) : tplsCol.doc();
+    $("tpl-panel").hidden = true;
+    ref.set({ name: name, items: list, created: same ? same.created : Date.now() }).then(function () {
+      setMsg("テンプレート「" + name + "」を保存しました（" + list.length + "個）。");
+    }).catch(fail);
+  }
+
+  /* ---------- 並べ替え（ポインタ操作。マウスもタッチも同じ） ---------- */
+  function keyOf(it) { return it.order != null ? it.order : it.created; }
+
+  function gripButton() {
+    var g = document.createElement("button");
+    g.type = "button"; g.className = "grip"; g.textContent = "⋮⋮";
+    g.setAttribute("aria-label", "ドラッグして並べ替え");
+    return g;
+  }
+
+  /* box 内の .sortable をグリップでドラッグ。離したとき onDrop(動かした要素, その直後に来る要素 or null) */
+  function enableSort(box, onDrop) {
+    box.addEventListener("pointerdown", function (ev) {
+      var grip = ev.target.closest(".grip");
+      if (!grip || !box.contains(grip)) return;
+      var el = grip.closest(".sortable");
+      ev.preventDefault();
+      var y0 = ev.clientY, before = null;
+      var sibs = [].filter.call(box.children, function (x) { return x !== el && x.classList.contains("sortable"); });
+      el.classList.add("drag");
+      function mark() {
+        sibs.forEach(function (s) { s.classList.remove("drop-before", "drop-end"); });
+        if (before) before.classList.add("drop-before");
+        else if (sibs.length) sibs[sibs.length - 1].classList.add("drop-end");
+      }
+      function move(e) {
+        el.style.transform = "translateY(" + (e.clientY - y0) + "px)";
+        before = null;
+        for (var i = 0; i < sibs.length; i++) {
+          var r = sibs[i].getBoundingClientRect();
+          if (e.clientY < r.top + r.height / 2) { before = sibs[i]; break; }
+        }
+        mark();
+      }
+      function up() {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        window.removeEventListener("pointercancel", up);
+        sibs.forEach(function (s) { s.classList.remove("drop-before", "drop-end"); });
+        el.classList.remove("drag"); el.style.transform = "";
+        onDrop(el, before);
+      }
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
+    });
+  }
+
+  function dropItem(el, before) {
+    var box = el.parentElement;
+    var list = [].filter.call(box.children, function (x) { return x !== el && x.classList.contains("sortable"); });
+    var at = before ? list.indexOf(before) : list.length;
+    var byId = function (e) { return items.filter(function (i) { return i.id === e.dataset.id; })[0]; };
+    var prev = list[at - 1] && byId(list[at - 1]), next = list[at] && byId(list[at]);
+    var me = byId(el);
+    if (!me) return;
+    var k;
+    if (prev && next) k = (keyOf(prev) + keyOf(next)) / 2;
+    else if (prev) k = keyOf(prev) + 1000;
+    else if (next) k = keyOf(next) - 1000;
+    else return;
+    me.order = k;
+    render();
+    itemsCol.doc(me.id).update({ order: k }).catch(fail);
+  }
+
+  /* ---------- 項目 ---------- */
+  var editingId = null, draft = null;
+
+  function startEdit(it) {
+    editingId = it.id; draft = { text: it.text, cat: catOf(it) };
+    render();
+    var f = $("edit-text");
+    if (f) { f.focus(); f.select(); }
+  }
+  function stopEdit() { editingId = null; draft = null; render(); }
+  function saveEdit(it) {
+    var t = draft.text.trim();
+    if (!t) return;
+    var patch = { text: t };
+    if (it.list === "packing") patch.cat = draft.cat;
+    it.text = t; if (patch.cat) it.cat = patch.cat;
+    editingId = null; draft = null;
+    render();
+    itemsCol.doc(it.id).update(patch).catch(fail);
+  }
+
+  function renderEdit(it) {
+    var li = document.createElement("li");
+    li.className = "editing";
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.maxLength = 200; inp.value = draft.text; inp.id = "edit-text";
+    inp.setAttribute("aria-label", "内容を修正");
+    inp.addEventListener("input", function () { draft.text = inp.value; });
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); saveEdit(it); }
+      else if (e.key === "Escape") stopEdit();
+    });
+    li.appendChild(inp);
+    if (it.list === "packing") {
+      var sel = document.createElement("select");
+      sel.setAttribute("aria-label", "分類");
+      CATS.forEach(function (c) { var o = document.createElement("option"); o.textContent = c; sel.appendChild(o); });
+      sel.value = draft.cat;
+      sel.addEventListener("change", function () { draft.cat = sel.value; });
+      li.appendChild(sel);
+    }
+    var b = document.createElement("div"); b.className = "btns";
+    var ok = document.createElement("button"); ok.type = "button"; ok.className = "sm primary"; ok.textContent = "保存";
+    ok.addEventListener("click", function () { saveEdit(it); });
+    var no = document.createElement("button"); no.type = "button"; no.className = "sm"; no.textContent = "キャンセル";
+    no.addEventListener("click", stopEdit);
+    b.appendChild(ok); b.appendChild(no); li.appendChild(b);
+    return li;
+  }
+
+  function renderItem(it) {
+    if (it.id === editingId) return renderEdit(it);
+    var li = document.createElement("li");
+    li.className = "sortable" + (it.done ? " done" : "");
+    li.dataset.id = it.id;
+    var lab = document.createElement("label");
+    var cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = !!it.done;
+    cb.addEventListener("change", function () { itemsCol.doc(it.id).update({ done: cb.checked }).catch(fail); });
+    var span = document.createElement("span");
+    span.className = "t"; span.textContent = it.text;
+    lab.appendChild(cb); lab.appendChild(span);
+    var del = document.createElement("button");
+    del.className = "del"; del.type = "button"; del.textContent = "×";
+    del.setAttribute("aria-label", "削除: " + it.text);
+    del.addEventListener("click", function () { itemsCol.doc(it.id).delete().catch(fail); });
+    var ed2 = document.createElement("button");
+    ed2.className = "edit"; ed2.type = "button"; ed2.textContent = "✎";
+    ed2.setAttribute("aria-label", "修正: " + it.text);
+    ed2.addEventListener("click", function () { startEdit(it); });
+    li.appendChild(gripButton()); li.appendChild(lab); li.appendChild(ed2); li.appendChild(del);
+    return li;
+  }
+
+  function group(title, list) {
+    var g = document.createElement("section");
+    g.className = "group";
+    if (title) { var h = document.createElement("h2"); h.textContent = title; g.appendChild(h); }
+    var ul = document.createElement("ul");
+    list.forEach(function (it) { ul.appendChild(renderItem(it)); });
+    enableSort(ul, dropItem);
+    g.appendChild(ul);
+    return g;
+  }
+
+  function currentItems() {
+    return items.filter(function (i) {
+      if (i.list !== cur) return false;
+      if (cur === "todo") return true;
+      return tripId === LEGACY ? !i.trip : i.trip === tripId;
+    });
+  }
+
+  function render() {
+    ensureTrip();
+    renderTrips();
+    var noTrip = cur === "packing" && !tripId;
+    $("form").hidden = noTrip;
+    $("lists").hidden = false;
+    var mine = noTrip ? [] : currentItems();
+    mine.sort(function (a, b) { return (!!a.done - !!b.done) || (keyOf(a) - keyOf(b)); });
+    var done = mine.filter(function (i) { return i.done; }).length;
+    $("count").innerHTML = "<b>" + done + " / " + mine.length + "</b> 完了";
+    $("fill").style.width = mine.length ? (done / mine.length * 100) + "%" : "0";
+    $("clear-done").disabled = !done;
+    $("uncheck").disabled = !done;
+    var box = $("lists");
+    box.textContent = "";
+    if (noTrip) {
+      var e0 = document.createElement("div");
+      e0.className = "empty";
+      e0.textContent = "旅行ごとに持ち物リストを作れます。「＋ 新しい旅行」からテンプレートを選んで始めましょう。";
+      box.appendChild(e0);
+    } else if (!mine.length) {
+      var e = document.createElement("div");
+      e.className = "empty";
+      e.textContent = cur === "todo" ? "まだ項目がありません。上の欄に最初のToDoを入力してください。" : "この旅行にはまだ持ち物がありません。上の欄から追加してください。";
+      box.appendChild(e);
+    } else if (cur === "todo") {
+      box.appendChild(group("", mine));
+    } else {
+      CATS.forEach(function (c) {
+        var l = mine.filter(function (i) { return catOf(i) === c; });
+        if (l.length) box.appendChild(group(c, l));
+      });
+    }
+  }
+
+  function setTab(name) {
+    cur = name; editingId = null; draft = null;
+    ["todo", "packing"].forEach(function (n) { $("tab-" + n).setAttribute("aria-selected", String(n === name)); });
+    var p = name === "packing";
+    $("trip").hidden = !p;
+    if (!p) { ["new-panel", "tpl-panel", "ed-panel"].forEach(function (id) { $(id).hidden = true; }); }
+    $("cat").hidden = !p;
+    $("uncheck").hidden = !p;
+    $("text").placeholder = p ? "持ち物を入力" : "ToDoを入力";
+    setMsg("");
+    render();
+  }
+
+  /* ---------- イベント ---------- */
+  document.querySelectorAll(".tabs button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var n = b.getAttribute("data-list");
+      try { history.replaceState(null, "", "#" + n); } catch (e) {}
+      setTab(n);
+    });
+  });
+
+  CATS.forEach(function (c) { var o = document.createElement("option"); o.textContent = c; $("cat").appendChild(o); });
+
+  $("form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var t = $("text").value.trim();
+    if (!t || !itemsCol) return;
+    var data = { list: cur, text: t, done: false, created: Date.now() };
+    if (cur === "packing") {
+      if (!tripId) return;
+      data.cat = $("cat").value;
+      if (tripId !== LEGACY) data.trip = tripId;
+    }
+    $("text").value = "";
+    itemsCol.add(data).catch(fail);
+    $("text").focus();
+  });
+
+  $("more").addEventListener("click", function () {
+    var t = $("trip-tools"); t.hidden = !t.hidden;
+    $("more").setAttribute("aria-expanded", String(!t.hidden));
+  });
+  $("trip-sel").addEventListener("change", function () { tripId = $("trip-sel").value; ls("trip", tripId); editingId = null; draft = null; render(); });
+  $("new-trip").addEventListener("click", function () {
+    $("tpl-panel").hidden = true;
+    $("new-panel").hidden = false;
+    renderTplOptions();
+    $("trip-name").focus();
+  });
+  $("cancel-trip").addEventListener("click", function () { $("new-panel").hidden = true; });
+  $("tpl-sel").addEventListener("change", updateTplHint);
+  $("create-trip").addEventListener("click", createTrip);
+  $("trip-name").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); createTrip(); } });
+
+  $("save-tpl").addEventListener("click", function () {
+    var t = tripList().filter(function (x) { return x.id === tripId; })[0];
+    $("new-panel").hidden = true;
+    $("tpl-panel").hidden = false;
+    $("tpl-name").value = t && tripId !== LEGACY ? t.name : "";
+    $("tpl-name").focus();
+  });
+  $("tpl-cancel").addEventListener("click", function () { $("tpl-panel").hidden = true; });
+  $("tpl-ok").addEventListener("click", saveTemplate);
+  $("tpl-name").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveTemplate(); } });
+
+  armed($("del-trip"), "この旅行を削除", function () {
+    var id = tripId;
+    if (!id) return;
+    var mine = items.filter(function (i) { return i.list === "packing" && (id === LEGACY ? !i.trip : i.trip === id); });
+    Promise.all(mine.map(function (i) { return itemsCol.doc(i.id).delete(); }))
+      .then(function () { return id === LEGACY ? null : tripsCol.doc(id).delete(); })
+      .catch(fail);
+  });
+  armed($("del-tpl"), "このテンプレートを削除", function () {
+    var v = $("tpl-sel").value;
+    if (v.indexOf("u:") === 0) tplsCol.doc(v.slice(2)).delete().catch(fail);
+  });
+
+  $("clear-done").addEventListener("click", function () {
+    currentItems().filter(function (i) { return i.done; }).forEach(function (i) { itemsCol.doc(i.id).delete().catch(fail); });
+  });
+  $("uncheck").addEventListener("click", function () {
+    currentItems().filter(function (i) { return i.done; }).forEach(function (i) { itemsCol.doc(i.id).update({ done: false }).catch(fail); });
+  });
+
+  /* ---------- テンプレート編集 ---------- */
+  var ed = { key: "", items: [] };   // key: "" 新規 / "u:<id>" 保存済み
+
+  function edOptions(keep) {
+    var sel = $("ed-sel");
+    sel.textContent = "";
+    function add(v, t, parent) { var o = document.createElement("option"); o.value = v; o.textContent = t; (parent || sel).appendChild(o); }
+    add("", "＋ 新しいテンプレート");
+    if (tpls.length) {
+      var g1 = document.createElement("optgroup"); g1.label = "保存したテンプレート";
+      tpls.slice().sort(function (a, b) { return a.created - b.created; }).forEach(function (t) { add("u:" + t.id, t.name, g1); });
+      sel.appendChild(g1);
+    }
+    sel.value = sel.querySelector('option[value="' + keep + '"]') ? keep : "";
+    ed.key = sel.value;
+  }
+
+  function edLoad() {
+    var k = ed.key;
+    ed.items = tplItems(k).map(function (x) { return { text: x.text, cat: x.cat }; });
+    var name = "";
+    if (k.indexOf("u:") === 0) tpls.forEach(function (t) { if ("u:" + t.id === k) name = t.name; });
+    $("ed-name").value = name;
+    $("ed-hint").textContent = "";
+    $("ed-del").hidden = k.indexOf("u:") !== 0;
+    edList();
+  }
+
+  function edList() {
+    var box = $("ed-list");
+    box.textContent = "";
+    if (!ed.items.length) {
+      var e = document.createElement("div"); e.className = "empty"; e.textContent = "持ち物がありません。下の欄から追加してください。"; box.appendChild(e); return;
+    }
+    ed.items.forEach(function (it, idx) {
+      var row = document.createElement("div"); row.className = "ed-row sortable";
+      row.dataset.idx = idx;
+      row.appendChild(gripButton());
+      var inp = document.createElement("input"); inp.type = "text"; inp.maxLength = 200; inp.value = it.text;
+      inp.setAttribute("aria-label", "持ち物名");
+      inp.addEventListener("input", function () { it.text = inp.value; });
+      var sel = document.createElement("select"); sel.setAttribute("aria-label", "分類");
+      CATS.forEach(function (c) { var o = document.createElement("option"); o.textContent = c; sel.appendChild(o); });
+      sel.value = CATS.indexOf(it.cat) < 0 ? "その他" : it.cat;
+      sel.addEventListener("change", function () { it.cat = sel.value; });
+      var del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×";
+      del.setAttribute("aria-label", "削除: " + it.text);
+      del.addEventListener("click", function () { ed.items.splice(idx, 1); edList(); });
+      row.appendChild(inp); row.appendChild(sel); row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+
+  function edAddItem() {
+    var t = $("ed-text").value.trim();
+    if (!t) { $("ed-text").focus(); return; }
+    ed.items.push({ text: t, cat: $("ed-cat").value });
+    $("ed-text").value = "";
+    edList();
+    $("ed-text").focus();
+  }
+
+  function edSave() {
+    var name = $("ed-name").value.trim();
+    if (!name || !tplsCol) { $("ed-name").focus(); return; }
+    var list = ed.items.map(function (x) { return { text: x.text.trim(), cat: x.cat }; }).filter(function (x) { return x.text; });
+    var ref, created = Date.now();
+    if (ed.key.indexOf("u:") === 0) {
+      ref = tplsCol.doc(ed.key.slice(2));
+      tpls.forEach(function (t) { if ("u:" + t.id === ed.key) created = t.created; });
+    } else {
+      var same = tpls.filter(function (t) { return t.name === name; })[0];
+      ref = same ? tplsCol.doc(same.id) : tplsCol.doc();
+      if (same) created = same.created;
+    }
+    ref.set({ name: name, items: list, created: created }).then(function () {
+      ed.key = "u:" + ref.id;
+      setMsg("テンプレート「" + name + "」を保存しました（" + list.length + "個）。");
+    }).catch(fail);
+  }
+
+  enableSort($("ed-list"), function (el, before) {
+    var from = +el.dataset.idx, to = before ? +before.dataset.idx : ed.items.length;
+    var moved = ed.items.splice(from, 1)[0];
+    if (to > from) to--;
+    ed.items.splice(to, 0, moved);
+    edList();
+  });
+
+  CATS.forEach(function (c) { var o = document.createElement("option"); o.textContent = c; $("ed-cat").appendChild(o); });
+  $("edit-tpl").addEventListener("click", function () {
+    $("new-panel").hidden = true; $("tpl-panel").hidden = true;
+    var open = $("ed-panel").hidden;
+    $("ed-panel").hidden = !open;
+    if (open) { edOptions(""); edLoad(); }
+  });
+  $("ed-close").addEventListener("click", function () { $("ed-panel").hidden = true; });
+  $("ed-sel").addEventListener("change", function () { ed.key = $("ed-sel").value; edLoad(); });
+  $("ed-add").addEventListener("click", edAddItem);
+  $("ed-text").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); edAddItem(); } });
+  $("ed-save").addEventListener("click", edSave);
+  armed($("ed-del"), "このテンプレートを削除", function () {
+    if (ed.key.indexOf("u:") !== 0) return;
+    tplsCol.doc(ed.key.slice(2)).delete().then(function () { edOptions(""); edLoad(); }).catch(fail);
+  });
+
+  tripId = ls("trip");
+  setTab(cur);
+
+  /* ---------- 同期 ---------- */
+  /* 保存先は Google スプレッドシート（Apps Script）。家計簿と同じ仕組み。
+     端末にも控えを持ち、書き込みはすぐ画面に反映して裏で送る。 */
+  var CFG_KEY = "td.cfg", CACHE_KEY = "td.cache", COLS = ["items", "trips", "templates"];
+  var store = { items: {}, trips: {}, templates: {} };
+  var dirty = {}, pend = {}, inflight = {}, failed = {};
+  var listeners = { items: [], trips: [], templates: [] };
+  var loading = false, setupMsg = "";
+
+  function getCfg() { try { return JSON.parse(localStorage.getItem(CFG_KEY) || "null"); } catch (e) { return null; } }
+  function setCfg(c) { try { if (c) localStorage.setItem(CFG_KEY, JSON.stringify(c)); else localStorage.removeItem(CFG_KEY); } catch (e) {} }
+  function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ store: store, dirty: dirty })); } catch (e) {} }
+  function loadCache() {
+    try {
+      var c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      if (c && c.store) COLS.forEach(function (k) { store[k] = c.store[k] || {}; });
+      if (c && c.dirty) dirty = c.dirty;
+    } catch (e) {}
+  }
+  function setSync(t) { $("sync").textContent = t; }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  var api = {
+    load: function (cfg) {
+      var u = cfg.url + (cfg.url.indexOf("?") >= 0 ? "&" : "?") + "key=" + encodeURIComponent(cfg.key) + "&t=" + Date.now();
+      return fetch(u, { cache: "no-store", redirect: "follow" }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.ok) throw { code: j.error || "error" };
+        return j.docs || {};
+      });
+    },
+    post: function (cfg, body) {
+      body.key = cfg.key;
+      return fetch(cfg.url, { method: "POST", redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json(); }).then(function (j) {
+          if (!j.ok) throw { code: j.error || "error" };
+          return j;
+        });
+    }
+  };
+
+  function snapOf(c) {
+    return { docs: Object.keys(store[c]).map(function (id) { return { id: id, data: function () { return store[c][id]; } }; }) };
+  }
+  function notify(c) { listeners[c].forEach(function (fn) { fn(snapOf(c)); }); }
+  function notifyAll() { COLS.forEach(notify); }
+  function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function anyInflight() { return Object.keys(inflight).some(function (k) { return inflight[k]; }); }
+  function idle() { setSync(Object.keys(dirty).length ? (getCfg() ? "未保存あり" : "未接続") : "同期済み"); }
+
+  function mark(path) {
+    dirty[path] = true; pend[path] = true; saveCache();
+    if (!inflight[path]) flush(path);
+  }
+  function flush(path) {
+    var cfg = getCfg();
+    if (!cfg) { setSync("未接続"); return Promise.resolve(); }
+    inflight[path] = true; setSync("保存中…");
+    var p = path.split("/");
+    var step = function () {
+      if (!pend[path]) { inflight[path] = false; return Promise.resolve(); }
+      pend[path] = false;
+      var doc = store[p[0]][p[1]];
+      var body = doc ? { op: "set", path: path, data: doc } : { op: "delete", path: path };
+      return api.post(cfg, body).catch(function (e) {
+        if (e && e.code === "bad_key") throw e;
+        return sleep(800 + Math.random() * 700).then(function () { return api.post(cfg, body); });
+      }).then(function () {
+        if (!pend[path]) { delete dirty[path]; delete failed[path]; saveCache(); }
+      }, function (e) {
+        failed[path] = true;
+        setupMsg = e && e.code === "bad_key" ? "合言葉が違うため保存できませんでした。接続設定を確認してください。" : "";
+        pend[path] = false;
+      }).then(step);
+    };
+    return step().then(function () { if (!anyInflight()) idle(); });
+  }
+  function flushDirty() { Object.keys(dirty).forEach(function (path) { if (!inflight[path]) { pend[path] = true; flush(path); } }); }
+
+  function applyDocs(docs) {
+    var next = { items: {}, trips: {}, templates: {} };
+    Object.keys(docs).forEach(function (p) {
+      var a = p.split("/"), v = docs[p];
+      if (next[a[0]] && a[1]) next[a[0]][a[1]] = (v && v.data) || v;
+    });
+    Object.keys(dirty).forEach(function (p) {
+      var a = p.split("/");
+      if (!next[a[0]]) return;
+      if (store[a[0]][a[1]]) next[a[0]][a[1]] = store[a[0]][a[1]]; else delete next[a[0]][a[1]];
+    });
+    store = next; saveCache(); notifyAll();
+  }
+
+  function reload(quiet) {
+    var cfg = getCfg();
+    if (!cfg || loading || anyInflight()) return Promise.resolve();
+    loading = true;
+    if (!quiet) setSync("読み込み中…");
+    return api.load(cfg).then(function (docs) {
+      applyDocs(docs); idle(); flushDirty();
+    }).catch(function (e) {
+      if (e && e.code === "bad_key") { setupMsg = "合言葉が違います。接続設定から入れ直してください。"; openSetup(); setSync("接続できません"); }
+      else setSync(navigator.onLine === false ? "オフライン" : "読み込めません");
+    }).then(function () { loading = false; });
+  }
+
+  /* Firestore風の薄い入れ物。上のアプリ部分はこの形で読み書きする */
+  function makeCol(c) {
+    function docRef(id) {
+      return {
+        id: id,
+        set: function (data) { store[c][id] = JSON.parse(JSON.stringify(data)); mark(c + "/" + id); notify(c); return Promise.resolve(); },
+        update: function (patch) {
+          if (!store[c][id]) return Promise.resolve();
+          store[c][id] = Object.assign({}, store[c][id], patch); mark(c + "/" + id); notify(c); return Promise.resolve();
+        },
+        delete: function () { delete store[c][id]; mark(c + "/" + id); notify(c); return Promise.resolve(); }
+      };
+    }
+    return {
+      doc: function (id) { return docRef(id || newId()); },
+      add: function (data) { var r = docRef(newId()); return r.set(data).then(function () { return r; }); },
+      onSnapshot: function (fn) { listeners[c].push(fn); fn(snapOf(c)); return function () { listeners[c] = listeners[c].filter(function (x) { return x !== fn; }); }; }
+    };
+  }
+
+  function docs(snap) { return snap.docs.map(function (d) { return Object.assign({}, d.data(), { id: d.id }); }); }
+
+  itemsCol = makeCol("items"); tripsCol = makeCol("trips"); tplsCol = makeCol("templates");
+  loadCache();
+  itemsCol.onSnapshot(function (s) { items = docs(s); render(); });
+  tripsCol.onSnapshot(function (s) { trips = docs(s); render(); });
+  tplsCol.onSnapshot(function (s) {
+    tpls = docs(s);
+    if (!$("new-panel").hidden) renderTplOptions();
+    /* 選択肢だけ更新し、編集中の内容は上書きしない */
+    if (!$("ed-panel").hidden) edOptions(ed.key);
+  });
+
+  /* ---------- 接続設定 ---------- */
+  function renderSetup() {
+    var cfg = getCfg() || {};
+    $("cfg-url").value = cfg.url || "";
+    $("cfg-key").value = cfg.key || "";
+    $("setup-msg").textContent = setupMsg;
+    $("setup-close").hidden = !getCfg();
+  }
+  function openSetup() { $("setup").hidden = false; renderSetup(); }
+  $("setup-open").addEventListener("click", function () { setupMsg = ""; openSetup(); });
+  $("setup-close").addEventListener("click", function () { $("setup").hidden = true; });
+  $("setup-connect").addEventListener("click", function () {
+    var url = $("cfg-url").value.trim(), key = $("cfg-key").value.trim();
+    var m = $("setup-msg");
+    if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) { m.textContent = "URLは https://script.google.com/… で始まるものを入れてください。"; return; }
+    if (!key) { m.textContent = "合言葉を入れてください。"; return; }
+    m.textContent = "接続しています…";
+    var cfg = { url: url, key: key };
+    api.load(cfg).then(function (docs) {
+      setCfg(cfg); setupMsg = "";
+      if (Object.keys(docs).length) { applyDocs(docs); } else {
+        COLS.forEach(function (c) { Object.keys(store[c]).forEach(function (id) { dirty[c + "/" + id] = true; }); });
+      }
+      saveCache(); flushDirty(); idle();
+      $("setup").hidden = true; setMsg("接続しました。");
+    }).catch(function (e) {
+      m.textContent = e && e.code === "bad_key" ? "合言葉が違います。Apps Script の SECRET と同じものを入れてください。" : "接続できませんでした。URLと、デプロイの「アクセスできるユーザー：全員」を確認してください。";
+    });
+  });
+  $("setup-export").addEventListener("click", function () {
+    var out = {};
+    COLS.forEach(function (c) { Object.keys(store[c]).forEach(function (id) { out[c + "/" + id] = store[c][id]; }); });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: "application/json" }));
+    a.download = "todo-data-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  });
+  $("setup-import").addEventListener("change", function (ev) {
+    var f = ev.target.files[0]; ev.target.value = "";
+    if (!f) return;
+    f.text().then(function (t) {
+      var j = JSON.parse(t), n = 0;
+      Object.keys(j).forEach(function (p) {
+        var a = p.split("/"), v = j[p];
+        if (store[a[0]] && a[1] && v && typeof v === "object") { store[a[0]][a[1]] = (v.data && typeof v.data === "object" && !v.text) ? v.data : v; mark(p); n++; }
+      });
+      notifyAll();
+      $("setup-msg").textContent = n + "件を取り込みました。";
+    }).catch(function () { $("setup-msg").textContent = "取り込めませんでした。todo-data.json を選んでいるか確認してください。"; });
+  });
+
+  /* ---------- 起動 ---------- */
+  if (getCfg()) { setSync("読み込み中…"); reload(); flushDirty(); } else { setSync("未接続"); openSetup(); }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) reload(true); });
+  window.addEventListener("online", function () { reload(true); });
+  window.addEventListener("focus", function () { reload(true); });
+  setInterval(function () { if (!document.hidden && !editingId) reload(true); }, 30000);
+})();
+</script>
+</body>
+</html>
