@@ -155,6 +155,7 @@ header{order:-2}
       <button class="sm" id="more" type="button" aria-expanded="false" aria-label="その他の操作">⋯</button>
     </div>
     <div class="trip-row" id="trip-tools" hidden>
+      <button class="sm" id="edit-cat" type="button">分類を編集</button>
       <button class="sm" id="edit-tpl" type="button">テンプレートを編集</button>
       <button class="sm" id="save-tpl" type="button">テンプレートとして保存</button>
       <button class="sm danger" id="del-trip" type="button">この旅行を削除</button>
@@ -171,6 +172,20 @@ header{order:-2}
         <button class="sm primary" id="create-trip" type="button">作成</button>
         <button class="sm" id="cancel-trip" type="button">キャンセル</button>
         <button class="sm danger" id="del-tpl" type="button" hidden>このテンプレートを削除</button>
+      </div>
+    </div>
+
+    <div class="panel" id="cat-panel" hidden>
+      <h3>分類を編集</h3>
+      <div id="cat-list" class="ed-list"></div>
+      <div class="row">
+        <input type="text" id="cat-new" maxlength="20" autocomplete="off" placeholder="分類を追加（例：化粧品）" aria-label="追加する分類名">
+        <button class="sm" id="cat-add" type="button">追加</button>
+      </div>
+      <p class="hint">「その他」は最後に固定で残ります。削除した分類の持ち物は「その他」に移ります。名前を変えると、持ち物とテンプレートにも反映されます。</p>
+      <div class="row btns">
+        <button class="sm primary" id="cat-save" type="button">保存</button>
+        <button class="sm" id="cat-close" type="button">閉じる</button>
       </div>
     </div>
 
@@ -240,7 +255,21 @@ header{order:-2}
 
 <script>
 (function () {
-  var CATS = ["衣類", "その他"];
+  var FALLBACK = "その他";               // 固定の最後の分類。消せない
+  var userCats = ["衣類"];                // 自分で増やせる分類（settings/cats に保存）
+  var CATS = userCats.concat([FALLBACK]);
+  function setCats(list) {
+    userCats = list.filter(function (c, i) { return c && c !== FALLBACK && list.indexOf(c) === i; });
+    CATS = userCats.concat([FALLBACK]);
+  }
+  function fillCatSelects() {
+    ["cat", "ed-cat"].forEach(function (id) {
+      var s = $(id), prev = s.value;
+      s.textContent = "";
+      CATS.forEach(function (c) { var o = document.createElement("option"); o.textContent = c; s.appendChild(o); });
+      if (CATS.indexOf(prev) >= 0) s.value = prev;
+    });
+  }
   var LEGACY = "_legacy";
 
 
@@ -563,7 +592,7 @@ header{order:-2}
     ["todo", "packing"].forEach(function (n) { $("tab-" + n).setAttribute("aria-selected", String(n === name)); });
     var p = name === "packing";
     $("trip").hidden = !p;
-    if (!p) { ["new-panel", "tpl-panel", "ed-panel"].forEach(function (id) { $(id).hidden = true; }); }
+    if (!p) { ["new-panel", "tpl-panel", "ed-panel", "cat-panel"].forEach(function (id) { $(id).hidden = true; }); }
     $("cat").hidden = !p;
     $("uncheck").hidden = !p;
     $("text").placeholder = p ? "持ち物を入力" : "ToDoを入力";
@@ -580,7 +609,7 @@ header{order:-2}
     });
   });
 
-  CATS.forEach(function (c) { var o = document.createElement("option"); o.textContent = c; $("cat").appendChild(o); });
+  fillCatSelects();
 
   $("form").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -733,7 +762,6 @@ header{order:-2}
     edList();
   });
 
-  CATS.forEach(function (c) { var o = document.createElement("option"); o.textContent = c; $("ed-cat").appendChild(o); });
   $("edit-tpl").addEventListener("click", function () {
     $("new-panel").hidden = true; $("tpl-panel").hidden = true;
     var open = $("ed-panel").hidden;
@@ -750,16 +778,95 @@ header{order:-2}
     tplsCol.doc(ed.key.slice(2)).delete().then(function () { edOptions(""); edLoad(); }).catch(fail);
   });
 
+  /* ---------- 分類の編集 ---------- */
+  var cd = [];   // [{orig: 元の名前 or null, name: 編集中の名前}]
+
+  function catList() {
+    var box = $("cat-list");
+    box.textContent = "";
+    cd.forEach(function (c, idx) {
+      var row = document.createElement("div"); row.className = "ed-row sortable";
+      row.dataset.idx = idx;
+      row.appendChild(gripButton());
+      var inp = document.createElement("input"); inp.type = "text"; inp.maxLength = 20; inp.value = c.name;
+      inp.setAttribute("aria-label", "分類名");
+      inp.addEventListener("input", function () { c.name = inp.value; });
+      var del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×";
+      del.setAttribute("aria-label", "削除: " + c.name);
+      del.addEventListener("click", function () { cd.splice(idx, 1); catList(); });
+      row.appendChild(inp); row.appendChild(del);
+      box.appendChild(row);
+    });
+    var fixed = document.createElement("div"); fixed.className = "ed-row";
+    var fi = document.createElement("input"); fi.type = "text"; fi.value = FALLBACK; fi.disabled = true;
+    fi.setAttribute("aria-label", "固定の分類");
+    fixed.appendChild(fi);
+    box.appendChild(fixed);
+  }
+
+  function catAdd() {
+    var t = $("cat-new").value.trim();
+    if (!t) { $("cat-new").focus(); return; }
+    cd.push({ orig: null, name: t });
+    $("cat-new").value = "";
+    catList();
+    $("cat-new").focus();
+  }
+
+  function catSave() {
+    var seen = {}, rows = [];
+    cd.forEach(function (c) {
+      var n = c.name.trim();
+      if (!n || n === FALLBACK || seen[n]) return;
+      seen[n] = true; rows.push({ orig: c.orig, name: n });
+    });
+    var map = {};                       // 元の名前 → 新しい名前
+    userCats.forEach(function (o) { map[o] = FALLBACK; });
+    rows.forEach(function (r) { if (r.orig) map[r.orig] = r.name; });
+    var names = rows.map(function (r) { return r.name; });
+    items.forEach(function (i) {
+      if (i.list === "packing" && map[i.cat] !== undefined && map[i.cat] !== i.cat) itemsCol.doc(i.id).update({ cat: map[i.cat] });
+    });
+    tpls.forEach(function (t) {
+      var ch = false;
+      var list = (t.items || []).map(function (x) {
+        if (map[x.cat] !== undefined && map[x.cat] !== x.cat) { ch = true; return { text: x.text, cat: map[x.cat] }; }
+        return x;
+      });
+      if (ch) tplsCol.doc(t.id).set({ name: t.name, items: list, created: t.created });
+    });
+    settingsCol.doc("cats").set({ list: names });
+    $("cat-panel").hidden = true;
+    setMsg("分類を保存しました。");
+  }
+
+  enableSort($("cat-list"), function (el, before) {
+    var from = +el.dataset.idx, to = before ? +before.dataset.idx : cd.length;
+    var moved = cd.splice(from, 1)[0];
+    if (to > from) to--;
+    cd.splice(to, 0, moved);
+    catList();
+  });
+  $("edit-cat").addEventListener("click", function () {
+    var open = $("cat-panel").hidden;
+    $("cat-panel").hidden = !open;
+    if (open) { cd = userCats.map(function (c) { return { orig: c, name: c }; }); catList(); }
+  });
+  $("cat-add").addEventListener("click", catAdd);
+  $("cat-new").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); catAdd(); } });
+  $("cat-save").addEventListener("click", catSave);
+  $("cat-close").addEventListener("click", function () { $("cat-panel").hidden = true; });
+
   tripId = ls("trip");
   setTab(cur);
 
   /* ---------- 同期 ---------- */
   /* 保存先は Google スプレッドシート（Apps Script）。家計簿と同じ仕組み。
      端末にも控えを持ち、書き込みはすぐ画面に反映して裏で送る。 */
-  var CFG_KEY = "td.cfg", CACHE_KEY = "td.cache", COLS = ["items", "trips", "templates"];
-  var store = { items: {}, trips: {}, templates: {} };
+  var CFG_KEY = "td.cfg", CACHE_KEY = "td.cache", COLS = ["items", "trips", "templates", "settings"];
+  var store = { items: {}, trips: {}, templates: {}, settings: {} };
   var dirty = {}, pend = {}, inflight = {}, failed = {};
-  var listeners = { items: [], trips: [], templates: [] };
+  var listeners = { items: [], trips: [], templates: [], settings: [] };
   var loading = false, setupMsg = "";
 
   function getCfg() { try { return JSON.parse(localStorage.getItem(CFG_KEY) || "null"); } catch (e) { return null; } }
@@ -832,7 +939,7 @@ header{order:-2}
   function flushDirty() { Object.keys(dirty).forEach(function (path) { if (!inflight[path]) { pend[path] = true; flush(path); } }); }
 
   function applyDocs(docs) {
-    var next = { items: {}, trips: {}, templates: {} };
+    var next = { items: {}, trips: {}, templates: {}, settings: {} };
     Object.keys(docs).forEach(function (p) {
       var a = p.split("/"), v = docs[p];
       if (next[a[0]] && a[1]) next[a[0]][a[1]] = (v && v.data) || v;
@@ -881,7 +988,13 @@ header{order:-2}
   function docs(snap) { return snap.docs.map(function (d) { return Object.assign({}, d.data(), { id: d.id }); }); }
 
   itemsCol = makeCol("items"); tripsCol = makeCol("trips"); tplsCol = makeCol("templates");
+  var settingsCol = makeCol("settings");
   loadCache();
+  settingsCol.onSnapshot(function (s) {
+    var d = s.docs.filter(function (x) { return x.id === "cats"; })[0];
+    if (d && d.data().list) setCats(d.data().list);
+    fillCatSelects(); render();
+  });
   itemsCol.onSnapshot(function (s) { items = docs(s); render(); });
   tripsCol.onSnapshot(function (s) { trips = docs(s); render(); });
   tplsCol.onSnapshot(function (s) {
