@@ -40,7 +40,13 @@ button{font-family:var(--f-body)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .wrap{max-width:720px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;gap:12px;
-  padding-top:max(14px,env(safe-area-inset-top,0px));padding-left:var(--gx);padding-right:var(--gx2)}
+  padding-left:var(--gx);padding-right:var(--gx2)}
+
+/* 見出し・旅行選択・進捗は、スクロールしても上に残す */
+.head{position:sticky;top:0;z-index:6;display:flex;flex-direction:column;gap:10px;
+  margin-left:calc(-1 * var(--gx));margin-right:calc(-1 * var(--gx2));
+  padding:max(10px,env(safe-area-inset-top,0px)) var(--gx2) 10px var(--gx);
+  background:var(--bg);border-bottom:1px solid var(--line)}
 
 /* 見出し */
 .top{display:flex;align-items:center;gap:8px;min-height:44px}
@@ -100,7 +106,7 @@ input:disabled{color:var(--muted);background:var(--soft)}
 ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 li{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-height:56px;transition:border-color .15s}
 li:hover{border-color:var(--accent)}
-li{scroll-margin-bottom:180px;scroll-margin-top:90px}
+li{scroll-margin-bottom:180px;scroll-margin-top:190px}
 li label{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:12px 4px 12px 0;cursor:pointer}
 li input[type="checkbox"]{width:24px;height:24px;accent-color:var(--accent);flex:none;margin:0}
 li .t{overflow-wrap:anywhere}
@@ -146,7 +152,7 @@ li.editing .btns .danger{margin-left:auto}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 
 @media (min-width:640px){
-  .wrap{padding-top:32px}
+  .head{margin-left:0;margin-right:0;padding-left:0;padding-right:0;padding-top:28px}
   h1{font-size:30px}
   .dock{margin-left:0;margin-right:0;padding-left:0;padding-right:0}
 }
@@ -155,11 +161,24 @@ li.editing .btns .danger{margin-left:auto}
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>ToDo・持ち物</h1>
-    <span id="sync" role="status">読み込み中…</span>
-    <button class="icon-btn" id="setup-open" type="button" aria-label="接続設定とバックアップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
-  </header>
+  <div class="head">
+    <header class="top">
+      <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>ToDo・持ち物</h1>
+      <span id="sync" role="status">読み込み中…</span>
+      <button class="icon-btn" id="setup-open" type="button" aria-label="接続設定とバックアップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    </header>
+    <section class="trip" id="trip" hidden aria-label="旅行">
+      <div class="trip-row">
+        <select id="trip-sel" aria-label="旅行を選ぶ"></select>
+        <button class="sq primary" id="new-trip" type="button" aria-label="新しい旅行を作る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+        <button class="sq" id="more" type="button" aria-expanded="false" aria-label="その他の操作">⋯</button>
+      </div>
+    </section>
+    <div class="progress">
+      <div class="bar"><i id="fill"></i></div><span id="count"></span>
+      <button class="sm" id="clear-done" type="button">完了を削除</button>
+    </div>
+  </div>
 
   <div class="panel" id="setup" hidden>
     <h3>接続設定</h3>
@@ -179,12 +198,7 @@ li.editing .btns .danger{margin-left:auto}
     </div>
   </div>
 
-  <section class="trip" id="trip" hidden aria-label="旅行">
-    <div class="trip-row">
-      <select id="trip-sel" aria-label="旅行を選ぶ"></select>
-      <button class="sq primary" id="new-trip" type="button" aria-label="新しい旅行を作る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
-      <button class="sq" id="more" type="button" aria-expanded="false" aria-label="その他の操作">⋯</button>
-    </div>
+  <div class="trip" id="trip-more" hidden>
     <div class="trip-tools" id="trip-tools" hidden>
       <button class="sm" id="edit-tpl" type="button">テンプレートを編集</button>
       <button class="sm" id="save-tpl" type="button">テンプレートとして保存</button>
@@ -236,12 +250,8 @@ li.editing .btns .danger{margin-left:auto}
         <button class="sm" id="tpl-cancel" type="button">キャンセル</button>
       </div>
     </div>
-  </section>
-
-  <div class="progress">
-    <div class="bar"><i id="fill"></i></div><span id="count"></span>
-    <button class="sm" id="clear-done" type="button">完了を削除</button>
   </div>
+
   <div id="msg" role="alert"></div>
 
   <div id="lists"></div>
@@ -574,6 +584,7 @@ li.editing .btns .danger{margin-left:auto}
     ["todo", "packing"].forEach(function (n) { $("tab-" + n).setAttribute("aria-selected", String(n === name)); });
     var p = name === "packing";
     $("trip").hidden = !p;
+    $("trip-more").hidden = !p;
     if (!p) { ["new-panel", "tpl-panel", "ed-panel"].forEach(function (id) { $(id).hidden = true; }); }
     $("uncheck").hidden = !p;
     $("text").placeholder = p ? "持ち物を入力" : "ToDoを入力";
