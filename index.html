@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>ToDo・持ち物</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -39,14 +39,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)
 button{font-family:var(--f-body)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-.wrap{max-width:720px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;gap:12px;
-  padding-left:var(--gx);padding-right:var(--gx2)}
-
-/* 見出し・旅行選択・進捗は、スクロールしても上に残す */
-.head{position:sticky;top:0;z-index:6;display:flex;flex-direction:column;gap:10px;
-  margin-left:calc(-1 * var(--gx));margin-right:calc(-1 * var(--gx2));
-  padding:max(10px,env(safe-area-inset-top,0px)) var(--gx2) 10px var(--gx);
+/* アプリ全体を見えている画面にぴったり収める。リストだけが中でスクロールするので、
+   キーボードを開いても見出しと入力欄は画面内に残る（高さは JS が見えている領域に合わせる） */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+.app{position:fixed;top:0;left:0;right:0;height:100vh;height:var(--app-h,100dvh);max-width:720px;margin:0 auto;display:flex;flex-direction:column}
+.head{flex:none;display:flex;flex-direction:column;gap:8px;
+  padding:max(8px,env(safe-area-inset-top,0px)) var(--gx2) 8px var(--gx);
   background:var(--bg);border-bottom:1px solid var(--line)}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;
+  padding:10px var(--gx2) 12px var(--gx);display:flex;flex-direction:column;gap:10px}
 
 /* 見出し */
 .top{display:flex;align-items:center;gap:8px;min-height:44px}
@@ -58,7 +59,7 @@ h1 svg{width:.9em;height:.9em;vertical-align:-.1em;margin-right:.35em}
 .icon-btn svg{width:22px;height:22px}
 
 /* ボタン・入力 */
-input[type="text"],select{font:16px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 12px;min-height:48px;min-width:0}
+input[type="text"],select{font:16px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 12px;min-height:44px;min-width:0}
 input[type="text"]{width:100%}
 select{padding-right:6px}
 input:disabled{color:var(--muted);background:var(--soft)}
@@ -69,7 +70,7 @@ input:disabled{color:var(--muted);background:var(--soft)}
 .sm.danger.armed{background:var(--crit);color:#fff;border-color:var(--crit)}
 .sm:disabled{opacity:.45;cursor:default}
 .sm:disabled:hover{border-color:var(--line)}
-.sq{border:1px solid var(--line);background:var(--surface);color:var(--ink);width:48px;height:48px;border-radius:10px;display:grid;place-items:center;cursor:pointer;flex:none;font-size:20px;padding:0}
+.sq{border:1px solid var(--line);background:var(--surface);color:var(--ink);width:44px;height:44px;border-radius:10px;display:grid;place-items:center;cursor:pointer;flex:none;font-size:20px;padding:0}
 .sq.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .sq svg{width:22px;height:22px}
 
@@ -94,26 +95,25 @@ input:disabled{color:var(--muted);background:var(--soft)}
 .bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
 .bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
 .progress b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
-.progress .sm{min-height:36px;padding:0 10px;font-size:13px}
+.progress .sm{min-height:34px;padding:0 10px;font-size:13px}
 #msg{color:var(--crit);font-size:14px}
 #msg:empty{display:none}
 
 /* リスト */
-#lists{flex:1;padding-bottom:4px}
-.group{display:flex;flex-direction:column;gap:8px}
+#lists{flex:1 0 auto}
+.group{display:flex;flex-direction:column;gap:6px}
 .group+.group{margin-top:8px}
 .group h2{font-size:12px;letter-spacing:.2em;color:var(--muted);margin:8px 0 0;font-weight:500}
-ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-li{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-height:56px;transition:border-color .15s}
-li:hover{border-color:var(--accent)}
-li{scroll-margin-bottom:180px;scroll-margin-top:190px}
-li label{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:12px 4px 12px 0;cursor:pointer}
-li input[type="checkbox"]{width:24px;height:24px;accent-color:var(--accent);flex:none;margin:0}
-li .t{overflow-wrap:anywhere}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+li{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:44px}
+li{scroll-margin-bottom:8px;scroll-margin-top:8px}
+li label{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:8px 4px 8px 0;cursor:pointer}
+li input[type="checkbox"]{width:22px;height:22px;accent-color:var(--accent);flex:none;margin:0}
+li .t{overflow-wrap:anywhere;font-size:15px;line-height:1.4}
 li.done .t{text-decoration:line-through;color:var(--muted)}
-.grip{border:0;background:transparent;color:var(--muted);cursor:grab;touch-action:none;width:38px;align-self:stretch;flex:none;padding:0;font-size:18px;line-height:1;letter-spacing:-3px}
+.grip{border:0;background:transparent;color:var(--muted);cursor:grab;touch-action:none;width:32px;align-self:stretch;flex:none;padding:0;font-size:18px;line-height:1;letter-spacing:-3px}
 .grip:hover{color:var(--ink)}
-.edit{border:0;background:transparent;color:var(--muted);width:48px;align-self:stretch;flex:none;cursor:pointer;display:grid;place-items:center;padding:0;border-radius:0 12px 12px 0}
+.edit{border:0;background:transparent;color:var(--muted);width:44px;align-self:stretch;flex:none;cursor:pointer;display:grid;place-items:center;padding:0;border-radius:0 10px 10px 0}
 .edit:hover{color:var(--ink)}
 .edit svg{width:20px;height:20px}
 li.editing{flex-wrap:wrap;padding:10px;gap:8px;align-items:center}
@@ -129,8 +129,8 @@ li.editing .btns .danger{margin-left:auto}
 .ed-row{display:flex;gap:6px;align-items:center;position:relative}
 .ed-row input[type="text"]{flex:1 1 auto;min-width:0}
 .ed-row select{flex:0 0 auto;max-width:9em}
-.ed-row .grip{height:48px;width:34px}
-.ed-row .del{width:44px;height:48px}
+.ed-row .grip{height:44px;width:30px}
+.ed-row .del{width:40px;height:44px}
 .sortable{position:relative}
 .sortable.drag{opacity:.8;z-index:2;border-color:var(--accent)}
 .sortable.drop-before::before,.sortable.drop-end::after{content:"";position:absolute;left:0;right:0;height:3px;background:var(--accent);border-radius:2px;z-index:3}
@@ -138,29 +138,26 @@ li.editing .btns .danger{margin-left:auto}
 .sortable.drop-end::after{bottom:-6px}
 
 /* 下に固定する入力欄とタブ */
-.dock{position:sticky;bottom:0;z-index:5;margin-top:auto;
-  margin-left:calc(-1 * var(--gx));margin-right:calc(-1 * var(--gx2));
-  padding:10px var(--gx2) max(10px,env(safe-area-inset-bottom,0px)) var(--gx);
-  background:var(--bg);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.dock{flex:none;padding:8px var(--gx2) max(8px,env(safe-area-inset-bottom,0px)) var(--gx);
+  background:var(--bg);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
 #form{display:flex;gap:8px}
 #form input[type="text"]{flex:1 1 auto}
 #form select{flex:0 0 auto;max-width:8em}
-.add{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:700 16px var(--f-body);letter-spacing:.05em;border-radius:10px;padding:0 18px;min-height:48px;cursor:pointer;flex:none}
+.add{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:700 16px var(--f-body);letter-spacing:.05em;border-radius:10px;padding:0 18px;min-height:44px;cursor:pointer;flex:none}
 .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.tabs button{border:1px solid var(--line);background:var(--surface);color:var(--muted);font:700 15px var(--f-body);letter-spacing:.05em;border-radius:10px;min-height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.tabs button{border:1px solid var(--line);background:var(--surface);color:var(--muted);font:700 15px var(--f-body);letter-spacing:.05em;border-radius:10px;min-height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
 .tabs button svg{width:20px;height:20px}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 
 @media (min-width:640px){
-  .head{margin-left:0;margin-right:0;padding-left:0;padding-right:0;padding-top:28px}
+  .head{padding-top:24px}
   h1{font-size:30px}
-  .dock{margin-left:0;margin-right:0;padding-left:0;padding-right:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app" id="app">
   <div class="head">
     <header class="top">
       <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>ToDo・持ち物</h1>
@@ -180,6 +177,7 @@ li.editing .btns .danger{margin-left:auto}
     </div>
   </div>
 
+  <div class="scroll" id="scroll">
   <div class="panel" id="setup" hidden>
     <h3>接続設定</h3>
     <p class="hint">Googleスプレッドシートに作った保存用プログラムの「ウェブアプリのURL」と、プログラムに書いた合言葉を入れてください。手順は SETUP.md にあります。</p>
@@ -255,6 +253,8 @@ li.editing .btns .danger{margin-left:auto}
   <div id="msg" role="alert"></div>
 
   <div id="lists"></div>
+
+  </div>
 
   <div class="dock">
     <form id="form">
@@ -398,19 +398,27 @@ li.editing .btns .danger{margin-left:auto}
   }
 
   /* box 内の .sortable をグリップでドラッグ。離したとき onDrop(動かした要素, その直後に来る要素 or null) */
+  function scrollParent(el) {
+    for (var p = el.parentElement; p; p = p.parentElement) {
+      var o = getComputedStyle(p).overflowY;
+      if ((o === "auto" || o === "scroll") && p.scrollHeight > p.clientHeight) return p;
+    }
+    return document.scrollingElement;
+  }
+
   function enableSort(box, onDrop) {
     box.addEventListener("pointerdown", function (ev) {
       var grip = ev.target.closest(".grip");
       if (!grip || !box.contains(grip)) return;
       var el = grip.closest(".sortable");
       ev.preventDefault();
-      var y0 = ev.clientY, s0 = window.scrollY, before = null, last = ev, raf = 0;
+      var sp = scrollParent(el), y0 = ev.clientY, s0 = sp.scrollTop, before = null, last = ev, raf = 0;
       var sibs = [].filter.call(box.children, function (x) { return x !== el && x.classList.contains("sortable"); });
       el.classList.add("drag");
       /* 画面の端に近づいたら自動でスクロールする（長いリストでも並べ替えられる） */
       function tick() {
-        var h = window.innerHeight, y = last.clientY;
-        if (y < 110) window.scrollBy(0, -14); else if (y > h - 190) window.scrollBy(0, 14);
+        var rc = sp.getBoundingClientRect(), y = last.clientY;
+        if (y < rc.top + 50) sp.scrollTop -= 14; else if (y > rc.bottom - 50) sp.scrollTop += 14;
         move(last);
         raf = requestAnimationFrame(tick);
       }
@@ -422,7 +430,7 @@ li.editing .btns .danger{margin-left:auto}
       }
       function move(e) {
         last = e;
-        el.style.transform = "translateY(" + (e.clientY - y0 + window.scrollY - s0) + "px)";
+        el.style.transform = "translateY(" + (e.clientY - y0 + sp.scrollTop - s0) + "px)";
         before = null;
         for (var i = 0; i < sibs.length; i++) {
           var r = sibs[i].getBoundingClientRect();
@@ -927,7 +935,7 @@ li.editing .btns .danger{margin-left:auto}
     $("setup-msg").textContent = setupMsg;
     $("setup-close").hidden = !getCfg();
   }
-  function openSetup() { $("setup").hidden = false; renderSetup(); window.scrollTo(0, 0); }
+  function openSetup() { $("setup").hidden = false; renderSetup(); $("scroll").scrollTop = 0; }
   $("setup-open").addEventListener("click", function () { setupMsg = ""; openSetup(); });
   $("setup-close").addEventListener("click", function () { $("setup").hidden = true; });
   $("setup-connect").addEventListener("click", function () {
@@ -970,6 +978,21 @@ li.editing .btns .danger{margin-left:auto}
       $("setup-msg").textContent = n + "件を取り込みました。";
     }).catch(function () { $("setup-msg").textContent = "取り込めませんでした。todo-data.json を選んでいるか確認してください。"; });
   });
+
+  /* ---------- キーボードを開いても画面内に収める ---------- */
+  var appEl = $("app");
+  function fit() {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    document.documentElement.style.setProperty("--app-h", vv.height + "px");
+    appEl.style.top = vv.offsetTop + "px";
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", fit);
+    window.visualViewport.addEventListener("scroll", fit);
+    fit();
+  }
+  window.addEventListener("scroll", function () { window.scrollTo(0, 0); });
 
   /* ---------- 起動 ---------- */
   if (getCfg()) { setSync("読み込み中…"); reload(); flushDirty(); } else { setSync("未接続"); openSetup(); }
