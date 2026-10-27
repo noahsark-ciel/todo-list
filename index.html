@@ -16,13 +16,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: eno-tools準拠。単一カラム、細い罫線のカード、スレート単色アクセント。タブで ToDo / 持ち物 を切替。持ち物は旅行ごとのリスト。 */
+/* Layout: スマホ優先。上に見出し・旅行選択・進捗、真ん中にリスト、下に入力欄とタブを固定（親指で届く）。eno-tools配色。 */
 :root{
   --bg:#f6f7f9; --surface:#ffffff; --ink:#1f2328; --muted:#6b7178; --line:#dde1e5;
   --accent:#2b2f36; --accent-ink:#ffffff; --soft:#f0f2f4; --crit:#9a4a44;
   --f-display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
   --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --gx:max(16px,env(safe-area-inset-left,0px));
+  --gx2:max(16px,env(safe-area-inset-right,0px));
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#15171a; --surface:#1e2125; --ink:#e6e8ea; --muted:#9aa0a6; --line:#30343a;
@@ -30,137 +32,163 @@
 :root[data-theme="dark"]{
   --bg:#15171a; --surface:#1e2125; --ink:#e6e8ea; --muted:#9aa0a6; --line:#30343a;
   --accent:#d5d9de; --accent-ink:#15171a; --soft:#272b30; --crit:#d9958d; color-scheme:dark}
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-html{scrollbar-gutter:stable;overflow-y:scroll}
-#lists{min-height:70vh}
-#sync{min-height:1.6em}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
-.wrap{max-width:720px;margin:0 auto;padding-block:36px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
-.eyebrow{display:flex;align-items:center;gap:12px;font-size:12px;letter-spacing:.24em;color:var(--muted);margin:0 0 10px}
-.eyebrow::before{content:"";width:36px;height:1.5px;background:var(--ink)}
-header{display:flex;flex-direction:column;margin-bottom:8px}
-h1{font-family:var(--f-display);font-weight:800;font-size:clamp(28px,6vw,40px);letter-spacing:.06em;margin:0;line-height:1.3}
-h1 svg{width:.85em;height:.85em;vertical-align:-.08em;margin-right:.3em}
-#sync{font-size:12px;color:var(--muted);margin-top:6px}
-.tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
-.tabs button{border:0;background:transparent;color:var(--muted);font:700 15px var(--f-body);letter-spacing:.06em;padding:11px 8px;cursor:pointer;min-height:44px}
-.tabs button+button{border-left:1px solid var(--line)}
-.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)}
+button{font-family:var(--f-body)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+.wrap{max-width:720px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;gap:12px;
+  padding-top:max(14px,env(safe-area-inset-top,0px));padding-left:var(--gx);padding-right:var(--gx2)}
+
+/* 見出し */
+.top{display:flex;align-items:center;gap:8px;min-height:44px}
+h1{flex:1;min-width:0;margin:0;font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.05em;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h1 svg{width:.9em;height:.9em;vertical-align:-.1em;margin-right:.35em}
+#sync{font-size:12px;color:var(--muted);white-space:nowrap}
+.icon-btn{border:0;background:transparent;color:var(--muted);width:44px;height:44px;border-radius:10px;display:grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn:hover{color:var(--ink)}
+.icon-btn svg{width:22px;height:22px}
+
+/* ボタン・入力 */
+input[type="text"],select{font:16px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 12px;min-height:48px;min-width:0}
+input[type="text"]{width:100%}
+select{padding-right:6px}
+input:disabled{color:var(--muted);background:var(--soft)}
+.sm{font:500 14px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:0 14px;min-height:44px;cursor:pointer}
+.sm:hover{border-color:var(--accent)}
+.sm.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.sm.danger{color:var(--crit)}
+.sm.danger.armed{background:var(--crit);color:#fff;border-color:var(--crit)}
+.sm:disabled{opacity:.45;cursor:default}
+.sm:disabled:hover{border-color:var(--line)}
+.sq{border:1px solid var(--line);background:var(--surface);color:var(--ink);width:48px;height:48px;border-radius:10px;display:grid;place-items:center;cursor:pointer;flex:none;font-size:20px;padding:0}
+.sq.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sq svg{width:22px;height:22px}
+
+/* 旅行 */
 .trip{display:flex;flex-direction:column;gap:10px}
-/* 旅行選択は進捗・入力欄の下に置く。タブを切り替えても上の部分は動かない */
-.trip-row:first-child{min-height:48px}
-#more{width:48px;padding:0;font-size:18px;min-height:48px}
-.trip-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.trip-row select{flex:1 1 120px;min-height:48px;min-width:0;font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:.04em}
-.panel{display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.trip-row{display:flex;gap:8px;align-items:center}
+.trip-row select{flex:1 1 auto;font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:.04em}
+.trip-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.panel{display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
 .panel h3{margin:0;font-size:12px;font-weight:500;letter-spacing:.2em;color:var(--muted)}
 .panel .row{display:flex;gap:8px;flex-wrap:wrap}
 .panel .row>*{flex:1 1 160px;min-width:0}
 .panel .row.btns>*{flex:0 0 auto}
-.hint{font-size:12px;color:var(--muted);margin:0}
-.ed-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
-.ed-list .empty{padding:16px}
-.ed-row{display:flex;gap:6px;align-items:center}
-.ed-row input[type="text"]{flex:1 1 auto;min-width:0;min-height:40px;padding:7px 10px}
-.ed-row select{flex:0 0 auto;min-height:40px;padding:7px 8px;max-width:9em}
-.ed-row .del{width:40px;height:40px}
-.sortable{position:relative}
-.grip{border:0;background:transparent;color:var(--muted);cursor:grab;touch-action:none;width:30px;height:44px;flex:none;padding:0;margin-left:2px;font-size:18px;line-height:1;letter-spacing:-3px;border-radius:6px}
-.grip:hover{color:var(--ink)}
-.ed-row .grip{height:40px}
-.sortable.drag{opacity:.75;z-index:2;border-color:var(--accent)}
-.sortable.drop-before::before,.sortable.drop-end::after{content:"";position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px}
-.sortable.drop-before::before{top:-5px}
-.sortable.drop-end::after{bottom:-5px}
+.panel label.f{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700}
+.panel label.f input{font-weight:400}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.filebtn{display:inline-flex;align-items:center}
+.filebtn input{display:none}
 
-.progress{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+/* 進捗 */
+.progress{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
 .bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
 .bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
 .progress b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.progress .sm{min-height:36px;padding:0 10px;font-size:13px}
+#msg{color:var(--crit);font-size:14px}
+#msg:empty{display:none}
 
-form{display:flex;gap:8px;flex-wrap:wrap}
-form input[type="text"]{flex:1 1 200px;min-width:0}
-input[type="text"],select{font:15px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-height:44px}
-.add{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:700 15px var(--f-body);letter-spacing:.06em;border-radius:6px;padding:0 22px;min-height:44px;cursor:pointer}
-.sm{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:5px;padding:8px 14px;min-height:40px;cursor:pointer}
-.sm:hover{border-color:var(--accent)}
-.sm:disabled{opacity:.45;cursor:default}
-.sm:disabled:hover{border-color:var(--line)}
-.sm.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
-.sm.danger{color:var(--crit)}
-.sm.danger.armed{background:var(--crit);color:#fff;border-color:var(--crit)}
-
-.group{display:flex;flex-direction:column;gap:6px}
-.group h2{font-size:12px;letter-spacing:.2em;color:var(--muted);margin:12px 0 0;font-weight:500}
+/* リスト */
+#lists{flex:1;padding-bottom:4px}
+.group{display:flex;flex-direction:column;gap:8px}
+.group+.group{margin-top:8px}
+.group h2{font-size:12px;letter-spacing:.2em;color:var(--muted);margin:8px 0 0;font-weight:500}
 ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-li{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding-right:4px;transition:border-color .15s}
+li{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-height:56px;transition:border-color .15s}
 li:hover{border-color:var(--accent)}
-li label{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:12px 8px 12px 4px;cursor:pointer}
-li input[type="checkbox"]{width:20px;height:20px;accent-color:var(--accent);flex:none;margin:0}
+li label{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:12px 4px 12px 0;cursor:pointer}
+li input[type="checkbox"]{width:24px;height:24px;accent-color:var(--accent);flex:none;margin:0}
 li .t{overflow-wrap:anywhere}
 li.done .t{text-decoration:line-through;color:var(--muted)}
+.grip{border:0;background:transparent;color:var(--muted);cursor:grab;touch-action:none;width:38px;align-self:stretch;flex:none;padding:0;font-size:18px;line-height:1;letter-spacing:-3px}
+.grip:hover{color:var(--ink)}
+.edit{border:0;background:transparent;color:var(--muted);width:48px;align-self:stretch;flex:none;cursor:pointer;display:grid;place-items:center;padding:0;border-radius:0 12px 12px 0}
+.edit:hover{color:var(--ink)}
+.edit svg{width:20px;height:20px}
+li.editing{flex-wrap:wrap;padding:10px;gap:8px;align-items:center}
+li.editing input[type="text"]{flex:1 1 100%}
+li.editing select{flex:1 1 40%}
+li.editing .btns{display:flex;gap:8px;flex:1 1 100%;flex-wrap:wrap}
+li.editing .btns .danger{margin-left:auto}
 .del{border:0;background:transparent;color:var(--muted);font-size:20px;width:44px;height:44px;border-radius:8px;cursor:pointer;flex:none}
 .del:hover{color:var(--crit)}
-.edit{border:0;background:transparent;color:var(--muted);font-size:16px;width:40px;height:44px;border-radius:8px;cursor:pointer;flex:none}
-.edit:hover{color:var(--ink)}
-li.editing{flex-wrap:wrap;padding:10px;gap:8px}
-li.editing input[type="text"]{flex:1 1 180px;min-width:0}
-li.editing select{flex:0 0 auto}
-li.editing .btns{display:flex;gap:8px}
-.empty{text-align:center;color:var(--muted);padding:32px 12px;border:1px dashed var(--line);border-radius:8px}
-.tools{display:flex;gap:8px;flex-wrap:wrap}
-#msg{color:var(--crit);font-size:13px}
-footer{font-size:12px;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:32px 12px;border:1px dashed var(--line);border-radius:12px;font-size:15px}
+.ed-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
+.ed-list .empty{padding:16px}
+.ed-row{display:flex;gap:6px;align-items:center;position:relative}
+.ed-row input[type="text"]{flex:1 1 auto;min-width:0}
+.ed-row select{flex:0 0 auto;max-width:9em}
+.ed-row .grip{height:48px;width:34px}
+.ed-row .del{width:44px;height:48px}
+.sortable{position:relative}
+.sortable.drag{opacity:.8;z-index:2;border-color:var(--accent)}
+.sortable.drop-before::before,.sortable.drop-end::after{content:"";position:absolute;left:0;right:0;height:3px;background:var(--accent);border-radius:2px;z-index:3}
+.sortable.drop-before::before{top:-6px}
+.sortable.drop-end::after{bottom:-6px}
+
+/* 下に固定する入力欄とタブ */
+.dock{position:sticky;bottom:0;z-index:5;margin-top:auto;
+  margin-left:calc(-1 * var(--gx));margin-right:calc(-1 * var(--gx2));
+  padding:10px var(--gx2) max(10px,env(safe-area-inset-bottom,0px)) var(--gx);
+  background:var(--bg);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+#form{display:flex;gap:8px}
+#form input[type="text"]{flex:1 1 auto}
+#form select{flex:0 0 auto;max-width:8em}
+.add{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:700 16px var(--f-body);letter-spacing:.05em;border-radius:10px;padding:0 18px;min-height:48px;cursor:pointer;flex:none}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tabs button{border:1px solid var(--line);background:var(--surface);color:var(--muted);font:700 15px var(--f-body);letter-spacing:.05em;border-radius:10px;min-height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.tabs button svg{width:20px;height:20px}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+@media (min-width:640px){
+  .wrap{padding-top:32px}
+  h1{font-size:30px}
+  .dock{margin-left:0;margin-right:0;padding-left:0;padding-right:0}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-/* 並び順: 見出し → 接続設定 → タブ → 旅行選択（持ち物のみ）→ 進捗 → 入力欄 → リスト */
-header{order:-4}
-#setup{order:-3}
-.tabs{order:-2}
-#trip{order:-1}
-.link{border:0;background:none;color:var(--muted);font:13px var(--f-body);text-decoration:underline;cursor:pointer;padding:6px 0}
-.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.panel label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700}
-.panel label.f input{font-weight:400}
-.filebtn{display:inline-flex;align-items:center}
-.filebtn input{display:none}
-.panel ol{margin:0;padding-left:1.4em;font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <p class="eyebrow">TODO &amp; PACKING</p>
+  <header class="top">
     <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>ToDo・持ち物</h1>
     <span id="sync" role="status">読み込み中…</span>
+    <button class="icon-btn" id="setup-open" type="button" aria-label="接続設定とバックアップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
   </header>
 
-  <div class="tabs" role="tablist">
-    <button id="tab-todo" role="tab" aria-selected="true" data-list="todo">ToDo</button>
-    <button id="tab-packing" role="tab" aria-selected="false" data-list="packing">持ち物</button>
+  <div class="panel" id="setup" hidden>
+    <h3>接続設定</h3>
+    <p class="hint">Googleスプレッドシートに作った保存用プログラムの「ウェブアプリのURL」と、プログラムに書いた合言葉を入れてください。手順は SETUP.md にあります。</p>
+    <label class="f" for="cfg-url">ウェブアプリのURL
+      <input type="text" id="cfg-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
+    </label>
+    <label class="f" for="cfg-key">合言葉
+      <input type="text" id="cfg-key" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </label>
+    <div id="setup-msg" class="hint" role="status"></div>
+    <div class="row btns">
+      <button class="sm primary" id="setup-connect" type="button">接続する</button>
+      <button class="sm" id="setup-close" type="button" hidden>閉じる</button>
+      <button class="sm" id="setup-export" type="button">バックアップを書き出す</button>
+      <label class="sm filebtn">ファイルを取り込む<input type="file" id="setup-import" accept=".json,application/json"></label>
+    </div>
   </div>
-
-  <div class="progress"><div class="bar"><i id="fill"></i></div><span id="count"></span></div>
-
-  <form id="form">
-    <input type="text" id="text" maxlength="200" autocomplete="off" aria-label="項目を追加">
-    <select id="cat" aria-label="分類" hidden></select>
-    <button class="add" type="submit">追加</button>
-  </form>
-  <div id="msg" role="alert"></div>
 
   <section class="trip" id="trip" hidden aria-label="旅行">
     <div class="trip-row">
       <select id="trip-sel" aria-label="旅行を選ぶ"></select>
-      <button class="sm primary" id="new-trip" type="button">＋ 新しい旅行</button>
-      <button class="sm" id="more" type="button" aria-expanded="false" aria-label="その他の操作">⋯</button>
+      <button class="sq primary" id="new-trip" type="button" aria-label="新しい旅行を作る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+      <button class="sq" id="more" type="button" aria-expanded="false" aria-label="その他の操作">⋯</button>
     </div>
-    <div class="trip-row" id="trip-tools" hidden>
+    <div class="trip-tools" id="trip-tools" hidden>
       <button class="sm" id="edit-cat" type="button">分類を編集</button>
       <button class="sm" id="edit-tpl" type="button">テンプレートを編集</button>
       <button class="sm" id="save-tpl" type="button">テンプレートとして保存</button>
+      <button class="sm" id="uncheck" type="button">チェックを全部外す</button>
       <button class="sm danger" id="del-trip" type="button">この旅行を削除</button>
     </div>
 
@@ -225,35 +253,25 @@ header{order:-4}
     </div>
   </section>
 
-  <div class="tools">
+  <div class="progress">
+    <div class="bar"><i id="fill"></i></div><span id="count"></span>
     <button class="sm" id="clear-done" type="button">完了を削除</button>
-    <button class="sm" id="uncheck" type="button" hidden>チェックを全部外す</button>
   </div>
+  <div id="msg" role="alert"></div>
 
   <div id="lists"></div>
 
-  <div class="panel" id="setup" hidden>
-    <h3>接続設定</h3>
-    <p class="hint">Googleスプレッドシートに作った保存用プログラムの「ウェブアプリのURL」と、プログラムに書いた合言葉を入れてください。手順は SETUP.md にあります。</p>
-    <label class="f" for="cfg-url">ウェブアプリのURL
-      <input type="text" id="cfg-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
-    </label>
-    <label class="f" for="cfg-key">合言葉
-      <input type="text" id="cfg-key" autocomplete="off" autocapitalize="off" spellcheck="false">
-    </label>
-    <div id="setup-msg" class="hint" role="status"></div>
-    <div class="row btns">
-      <button class="sm primary" id="setup-connect" type="button">接続する</button>
-      <button class="sm" id="setup-close" type="button" hidden>閉じる</button>
-      <button class="sm" id="setup-export" type="button">バックアップを書き出す</button>
-      <label class="sm filebtn">ファイルを取り込む<input type="file" id="setup-import" accept=".json,application/json"></label>
+  <div class="dock">
+    <form id="form">
+      <select id="cat" aria-label="分類" hidden></select>
+      <input type="text" id="text" maxlength="200" autocomplete="off" enterkeyhint="done" aria-label="項目を追加">
+      <button class="add" type="submit">追加</button>
+    </form>
+    <div class="tabs" role="tablist">
+      <button id="tab-todo" role="tab" aria-selected="true" data-list="todo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>ToDo</button>
+      <button id="tab-packing" role="tab" aria-selected="false" data-list="packing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>持ち物</button>
     </div>
   </div>
-
-  <footer class="foot">
-    <span>保存先：Googleスプレッドシート</span>
-    <button class="link" id="setup-open" type="button">接続設定</button>
-  </footer>
 </div>
 
 <script>
@@ -413,16 +431,25 @@ header{order:-4}
       if (!grip || !box.contains(grip)) return;
       var el = grip.closest(".sortable");
       ev.preventDefault();
-      var y0 = ev.clientY, before = null;
+      var y0 = ev.clientY, s0 = window.scrollY, before = null, last = ev, raf = 0;
       var sibs = [].filter.call(box.children, function (x) { return x !== el && x.classList.contains("sortable"); });
       el.classList.add("drag");
+      /* 画面の端に近づいたら自動でスクロールする（長いリストでも並べ替えられる） */
+      function tick() {
+        var h = window.innerHeight, y = last.clientY;
+        if (y < 110) window.scrollBy(0, -14); else if (y > h - 190) window.scrollBy(0, 14);
+        move(last);
+        raf = requestAnimationFrame(tick);
+      }
+      raf = requestAnimationFrame(tick);
       function mark() {
         sibs.forEach(function (s) { s.classList.remove("drop-before", "drop-end"); });
         if (before) before.classList.add("drop-before");
         else if (sibs.length) sibs[sibs.length - 1].classList.add("drop-end");
       }
       function move(e) {
-        el.style.transform = "translateY(" + (e.clientY - y0) + "px)";
+        last = e;
+        el.style.transform = "translateY(" + (e.clientY - y0 + window.scrollY - s0) + "px)";
         before = null;
         for (var i = 0; i < sibs.length; i++) {
           var r = sibs[i].getBoundingClientRect();
@@ -431,6 +458,7 @@ header{order:-4}
         mark();
       }
       function up() {
+        cancelAnimationFrame(raf);
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", up);
         window.removeEventListener("pointercancel", up);
@@ -508,7 +536,9 @@ header{order:-4}
     ok.addEventListener("click", function () { saveEdit(it); });
     var no = document.createElement("button"); no.type = "button"; no.className = "sm"; no.textContent = "キャンセル";
     no.addEventListener("click", stopEdit);
-    b.appendChild(ok); b.appendChild(no); li.appendChild(b);
+    var dl = document.createElement("button"); dl.type = "button"; dl.className = "sm danger"; dl.textContent = "削除";
+    dl.addEventListener("click", function () { editingId = null; draft = null; itemsCol.doc(it.id).delete().catch(fail); });
+    b.appendChild(ok); b.appendChild(no); b.appendChild(dl); li.appendChild(b);
     return li;
   }
 
@@ -524,15 +554,12 @@ header{order:-4}
     var span = document.createElement("span");
     span.className = "t"; span.textContent = it.text;
     lab.appendChild(cb); lab.appendChild(span);
-    var del = document.createElement("button");
-    del.className = "del"; del.type = "button"; del.textContent = "×";
-    del.setAttribute("aria-label", "削除: " + it.text);
-    del.addEventListener("click", function () { itemsCol.doc(it.id).delete().catch(fail); });
     var ed2 = document.createElement("button");
-    ed2.className = "edit"; ed2.type = "button"; ed2.textContent = "✎";
-    ed2.setAttribute("aria-label", "修正: " + it.text);
+    ed2.className = "edit"; ed2.type = "button";
+    ed2.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>';
+    ed2.setAttribute("aria-label", "修正・削除: " + it.text);
     ed2.addEventListener("click", function () { startEdit(it); });
-    li.appendChild(gripButton()); li.appendChild(lab); li.appendChild(ed2); li.appendChild(del);
+    li.appendChild(gripButton()); li.appendChild(lab); li.appendChild(ed2);
     return li;
   }
 
