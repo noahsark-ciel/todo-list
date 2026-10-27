@@ -312,14 +312,9 @@ li.editing .btns .danger{margin-left:auto}
   function catOf(i) { return CATS.indexOf(i.cat) < 0 ? "その他" : i.cat; }
 
   /* 2回押しで実行する確認（confirm()は使えないため） */
-  function armed(btn, label, run) {
+  function armed(btn, msg, run) {
     btn.addEventListener("click", function () {
-      if (btn.classList.contains("armed")) {
-        clearTimeout(armTimer[btn.id]); btn.classList.remove("armed"); btn.textContent = label; run();
-      } else {
-        btn.classList.add("armed"); btn.textContent = "もう一度押すと削除";
-        armTimer[btn.id] = setTimeout(function () { btn.classList.remove("armed"); btn.textContent = label; }, 3500);
-      }
+      if (confirm(typeof msg === "function" ? msg() : msg)) run();
     });
   }
 
@@ -537,7 +532,10 @@ li.editing .btns .danger{margin-left:auto}
     var no = document.createElement("button"); no.type = "button"; no.className = "sm"; no.textContent = "キャンセル";
     no.addEventListener("click", stopEdit);
     var dl = document.createElement("button"); dl.type = "button"; dl.className = "sm danger"; dl.textContent = "削除";
-    dl.addEventListener("click", function () { editingId = null; draft = null; itemsCol.doc(it.id).delete().catch(fail); });
+    dl.addEventListener("click", function () {
+      if (!confirm("「" + it.text + "」を削除します。よろしいですか？")) return;
+      editingId = null; draft = null; itemsCol.doc(it.id).delete().catch(fail);
+    });
     b.appendChild(ok); b.appendChild(no); b.appendChild(dl); li.appendChild(b);
     return li;
   }
@@ -683,7 +681,10 @@ li.editing .btns .danger{margin-left:auto}
   $("tpl-ok").addEventListener("click", saveTemplate);
   $("tpl-name").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveTemplate(); } });
 
-  armed($("del-trip"), "この旅行を削除", function () {
+  armed($("del-trip"), function () {
+    var t = tripList().filter(function (x) { return x.id === tripId; })[0];
+    return "「" + (t ? t.name : "この旅行") + "」と、その持ち物をすべて削除します。よろしいですか？";
+  }, function () {
     var id = tripId;
     if (!id) return;
     var mine = items.filter(function (i) { return i.list === "packing" && (id === LEGACY ? !i.trip : i.trip === id); });
@@ -691,13 +692,18 @@ li.editing .btns .danger{margin-left:auto}
       .then(function () { return id === LEGACY ? null : tripsCol.doc(id).delete(); })
       .catch(fail);
   });
-  armed($("del-tpl"), "このテンプレートを削除", function () {
+  armed($("del-tpl"), function () {
+    var v = $("tpl-sel").value, t = tpls.filter(function (x) { return "u:" + x.id === v; })[0];
+    return "テンプレート「" + (t ? t.name : "") + "」を削除します。よろしいですか？";
+  }, function () {
     var v = $("tpl-sel").value;
     if (v.indexOf("u:") === 0) tplsCol.doc(v.slice(2)).delete().catch(fail);
   });
 
   $("clear-done").addEventListener("click", function () {
-    currentItems().filter(function (i) { return i.done; }).forEach(function (i) { itemsCol.doc(i.id).delete().catch(fail); });
+    var list = currentItems().filter(function (i) { return i.done; });
+    if (!list.length || !confirm("完了した" + list.length + "件を削除します。よろしいですか？")) return;
+    list.forEach(function (i) { itemsCol.doc(i.id).delete().catch(fail); });
   });
   $("uncheck").addEventListener("click", function () {
     currentItems().filter(function (i) { return i.done; }).forEach(function (i) { itemsCol.doc(i.id).update({ done: false }).catch(fail); });
@@ -803,7 +809,10 @@ li.editing .btns .danger{margin-left:auto}
   $("ed-add").addEventListener("click", edAddItem);
   $("ed-text").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); edAddItem(); } });
   $("ed-save").addEventListener("click", edSave);
-  armed($("ed-del"), "このテンプレートを削除", function () {
+  armed($("ed-del"), function () {
+    var t = tpls.filter(function (x) { return "u:" + x.id === ed.key; })[0];
+    return "テンプレート「" + (t ? t.name : "") + "」を削除します。よろしいですか？";
+  }, function () {
     if (ed.key.indexOf("u:") !== 0) return;
     tplsCol.doc(ed.key.slice(2)).delete().then(function () { edOptions(""); edLoad(); }).catch(fail);
   });
