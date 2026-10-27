@@ -188,6 +188,7 @@ li.editing .btns .danger{margin-left:auto}
       <input type="text" id="cfg-key" autocomplete="off" autocapitalize="off" spellcheck="false">
     </label>
     <div id="setup-msg" class="hint" role="status"></div>
+    <p class="hint" id="diag"></p>
     <div class="row btns">
       <button class="sm primary" id="setup-connect" type="button">接続する</button>
       <button class="sm" id="setup-close" type="button" hidden>閉じる</button>
@@ -981,18 +982,25 @@ li.editing .btns .danger{margin-left:auto}
 
   /* ---------- キーボードを開いても画面内に収める ---------- */
   var appEl = $("app");
+  var BUILD = "2026-10-28-b";
   function fit() {
     var vv = window.visualViewport;
-    if (!vv) return;
-    document.documentElement.style.setProperty("--app-h", vv.height + "px");
-    appEl.style.top = vv.offsetTop + "px";
+    var h = vv ? vv.height : window.innerHeight;
+    document.documentElement.style.setProperty("--app-h", h + "px");
+    appEl.style.top = (vv ? vv.offsetTop : 0) + "px";
+    var d = $("diag");
+    if (d) d.textContent = "版 " + BUILD + " ／ 画面 " + Math.round(window.innerHeight) + " ／ 見える範囲 " + Math.round(h) + " ／ 上の余白 " + Math.round(vv ? vv.offsetTop : 0) + " ／ アプリ " + Math.round(appEl.getBoundingClientRect().height);
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", fit);
     window.visualViewport.addEventListener("scroll", fit);
-    fit();
   }
-  window.addEventListener("scroll", function () { window.scrollTo(0, 0); });
+  window.addEventListener("resize", fit);
+  window.addEventListener("orientationchange", fit);
+  /* キーボードの出入りで通知が遅れる端末向けに、フォーカス直後にも測り直す */
+  document.addEventListener("focusin", function () { [100, 300, 700].forEach(function (ms) { setTimeout(fit, ms); }); });
+  document.addEventListener("focusout", function () { [100, 300, 700].forEach(function (ms) { setTimeout(fit, ms); }); });
+  fit();
 
   /* ---------- 起動 ---------- */
   if (getCfg()) { setSync("読み込み中…"); reload(); flushDirty(); } else { setSync("未接続"); openSetup(); }
